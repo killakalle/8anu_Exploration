@@ -7,9 +7,39 @@ November, 2018
 _(approx. 1-2 pages)_
 
 ### Project Overview
-In this section, look to provide a high-level overview of the project in layman’s terms. Questions to ask yourself when writing this section:
-- _Has an overview of the project been provided, such as the problem domain, project origin, and related datasets or input data?_
-- _Has enough background information been given so that an uninformed reader would understand the problem domain and following problem statement?_
+The goal of this project is to build a recommender system for climbing routes within a given climbing area. The system will take a climbers preference and his or her stats into consideration.
+
+My Capstone Project is located in the world of **rock climbing**.  
+>_Rock climbing is an activity in which participants climb up, down or across natural rock formations or artificial rock walls. The goal is to reach the summit of a formation or the endpoint of a pre-defined route without falling._ [^first]  
+
+Here is a video of a rock climber on a famous route called [Action Directe](https://www.youtube.com/watch?v=y3EJctYJzpk).
+
+In recent years rock climbing has gained a lot of traction and is becoming more popular as an outdoor sports for a larger number of people. As such, there exists a potentially large audience  who could be interested in this project.
+
+Unlike the climber from the video above most people do rock climbing as a leisure activity. Therefore, time they can spend to go climbing is limited. As a hobby climber planning a climbing trip it is quite common to have a time window of round about 1-3 weeks at the climbing destination of choice. The majority of climbing areas boast a large number of routes to climb, far greater than anyone can achieve within a single trip. For example, the climbing area 'Frankenjura', one of Germany's largest climbing area, contains more than 10,000 climbs. It is therefore in the interest of the climber to know and attempt those climbs that are most enjoyable to her or him and just skip the rest.
+
+Often times there is a common agreement on what are the 'best' routes in a certain area and they are common knowledge. Most guide books contain some sort of list of the "Top climbs" in that region.    
+However, climbers often differ in their personal preferences. Some prefer to climb on small crimpy holds, while others enjoy long dynamic movements on large holds.  
+Additionally, for some type of rock, the climbs deteriorate over time as heavy traffic 'polishes' holds with formerly good and important friction.  
+
+Therefore, climbers would benefit from a personal recommendation of the best climbs within a climbing area, that match their climbing level as well as their personal preference.
+
+Meanwhile there are many websites where climbers can track their climbs and ascents in a virtual logbook and also rate the quality of the route. Most famous websites of this kind are
+
+* [8a.nu](https://www.8a.nu/)
+* [theCrag.com](https://www.thecrag.com/)
+* [UKClimbing.com](https://www.ukclimbing.com/logbook/)
+
+With this project, I will explore the database of 8a.nu - published on [Kaggle](https://www.kaggle.com/dcohen21/8anu-climbing-logbook) - to establish a personal recommendation system for climbers venturing into new climbing areas.  
+
+There has been quite a lot of academic research on the topic of recommender systems as well. Here is a short excerpt of publications:
+
+* Su and Khoshgoftaar provide a good introduction into CF in their article [A Survey of Collaborative Filtering Techniques](https://www.hindawi.com/journals/aai/2009/421425/)
+* In their 2018 paper Christakopoulou and Karypis provide an overview of [Local Latent Space Models for Top-N Recommendation](http://glaros.dtc.umn.edu/gkhome/node/1225)
+
+As I am an avid climber myself, this project is something I take a strong personal interest in.
+
+[^first]: [What is Rock Climbing?](https://riverrockclimbing.com/new-climbers/what-is-rock-climbing/)
 
 ### Problem Statement
 In this section, you will want to clearly define the problem that you are trying to solve, including the strategy (outline of tasks) you will use to achieve the desired solution. You should also thoroughly discuss what the intended solution will be for this problem. Questions to ask yourself when writing this section:
@@ -32,6 +62,34 @@ In this section, you will be expected to analyze the data you are using for the 
 - _If a dataset is present for this problem, are statistics about the dataset calculated and reported? Have any relevant results from this calculation been discussed?_
 - _If a dataset is **not** present for this problem, has discussion been made about the input space or input data for your problem?_
 - _Are there any abnormalities or characteristics about the input space or dataset that need to be addressed? (categorical variables, missing values, outliers, etc.)_
+
+Our dataset contains 114,587 entries. 60,303 out of these contain a rating. That is approx. 52.63%.
+
+| Column | Description | Datatype | Use | 
+|:------ |:------ |:------:|:------:| 
+| `crag_country` | 3-letter country code of the country where the crag is located. | categorical | no | 
+| `crag_id` | Unique id for identifying each crag. | int | no | 
+| `crag` | Name of the crag | text | no | 
+| `sector_id` | Unique id for identifying each sector. | int | yes | 
+| `sector` | Name of the sector. A sector is a specific area within a crag. | text | yes | 
+| `route` | Name of the route the climber has climbed. | text | yes | 
+| `grade_id` | Unique id for identifying each climbing grade. | int | statistics | 
+| `grade` | Climbing grade given to that route as per the French grading system | categorical | statistics | 
+| `year` | Year the route was climbed | int | statistics | 
+| `date` | Date the route was climbed. The date format is number of seconds since 1970-01-01. | int | statistics | 
+| `method_id` | Unique id for identifying each type of ascent. | int | statistics | 
+| `method` | The type of ascent the climber made on that route. | categorical | statistics | 
+| `notes` | Additional information the climber provided for this climb, e.g. Soft graded, i.e. fairly easy climb for the given grade | categorical | statistics | 
+| `raw_notes` | Encoding of different notes and combination of notes | int | statistics | 
+| `rating` | Rating given to the climb by this climber. This is our target attribute. | int | target | 
+| `user_id` | Unique id for this climber. | int | yes | 
+| `user_country` | 3-letter country code of the country where this climber is from. | categorical | statistics | 
+| `user_city` | City where this climber is from | text | statistics | 
+| `sex` | The climber's sex. 0 indicates male, 1 indicates female. | int | statistics | 
+| `height` | The climber's height in cm | int | statistics | 
+| `weight` | The climber's weight in kg | int | statistics | 
+| `birthdate` | The climber's date of birth | date | statistics | 
+| `started_climbing` | The year the climber started climbing. | int | statistics | 
 
 ### Exploratory Visualization
 In this section, you will need to provide some form of visualization that summarizes or extracts a relevant characteristic or feature about the data. The visualization should adequately support the data being used. Discuss why this visualization was chosen and how it is relevant. Questions to ask yourself when writing this section:

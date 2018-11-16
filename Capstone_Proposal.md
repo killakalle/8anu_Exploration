@@ -30,7 +30,13 @@ Meanwhile there are many websites where climbers can track their climbs and asce
 * [theCrag.com](https://www.thecrag.com/)
 * [UKClimbing.com](https://www.ukclimbing.com/logbook/)
 
-With this project, I will explore the database of one of these websites to establish a personal recommendation system for climbers venturing into new climbing areas.  
+With this project, I will explore the database of 8a.nu - published on [Kaggle](https://www.kaggle.com/dcohen21/8anu-climbing-logbook) - to establish a personal recommendation system for climbers venturing into new climbing areas.  
+
+There has been quite a lot of academic research on the topic of recommender systems as well. Here is a short excerpt of publications:
+
+* Su and Khoshgoftaar provide a good introduction into CF in their article [A Survey of Collaborative Filtering Techniques](https://www.hindawi.com/journals/aai/2009/421425/)
+* In their 2018 paper Christakopoulou and Karypis provide an overview of [Local Latent Space Models for Top-N Recommendation](http://glaros.dtc.umn.edu/gkhome/node/1225)
+
 As I am an avid climber myself, this project is something I take a strong personal interest in.
 
 [^first]: [What is Rock Climbing?](https://riverrockclimbing.com/new-climbers/what-is-rock-climbing/)
@@ -38,9 +44,23 @@ As I am an avid climber myself, this project is something I take a strong person
 
 ### Problem Statement
 
-The problem climbers face when first entering a new climbing area is which routes to go for. Typically there are a lot more climbs available than anybody can manage to climb in a typical climbing vacation. And not all climbs are worthwhile of doing (e.g. boring route, dangerous to climb, lot of dirt and vegetation, etc.). For any particular climber it would be very interesting to have a list of the best routes in each area. Ideally sorted by attractiveness and matched with the climbers skill level. So we are looking at a **ranking** or **recommendation problem**.
+The problem climbers face when first entering a new climbing area is which routes to go for. Typically there are a lot more climbs available than anybody can manage to climb in a typical climbing vacation. And not all climbs are worthwhile of doing (e.g. boring route, dangerous to climb, lot of dirt and vegetation, etc.). For any particular climber it would be very interesting to have a list of the best routes in each area. Ideally sorted by attractiveness and matched with the climbers skill level. 
+
+Hence the structure of the problem is that of **Ranking problem** or more precise a **Collaborative Filtering problem**, where we try to suggest climbs based on a climber's similarity to other climbers. During model exploration we may apply both supervised (k-nearest neighbor) as well as unsupervised (k-means) algorithms.
 
 Since not all climbers enjoy the same type of climbing, such a list of attractive climbs would ideally be tailored to every individual climber. Such a system of personal recommendation does not exist so far.
+
+Input to the problem will be 
+
+* list of users (climbers)
+* list of climbs (ascents)
+* list of user ratings per climb
+
+As an output we expect to get
+
+* list of top n recommendations per user (climber)
+
+A note on collaborative filtering vs content based filtering. In our case content based filterin is not considered, because there is very limited information on the routes itself. This could have been different, had there been more route information such as rock type, height, climbing style, indicator for polishedness, etc.
 
 ### Datasets and Inputs
 
@@ -59,6 +79,17 @@ The original data set from Kaggle is 196 MB. For this project I will use only a 
 
 For this proposal I will provide a subset of the data and tables already joined.
 
+Our data is very high dimensional. On the one hand side we have a 'small' number of users (around 3.300) and a large number of logged climbs (close to 115.000). About half of the climbs (approx 47%) are rated.
+
+The number of logged climbs is also the total number of examples, i.e. data points in the dataset.
+
+Labels in this data set are basically the user ratings of climbs. Since only about 47% of climbs are rated, we need to maintain that ratio of rated vs unrated climbs when doing train-test-validation splits.
+
+For the training set all items are submitted to the model. For validation and testing I need split ratings per user into
+
+* Observation subset - ratings submitted to the model
+* Testing subset - ratings used to evaluate predictions.
+
 [^second]: [8a.nu Climbing Logbook](https://www.kaggle.com/dcohen21/8anu-climbing-logbook)
 
 [^third]: [Styles of ascent in sport climbing](https://www.timeoutdoors.com/expert-advice/climbing/sport-climbing-techniques/styles-of-ascent-in-sport-climbing)
@@ -67,9 +98,16 @@ For this proposal I will provide a subset of the data and tables already joined.
 
 My goal is to create a recommender system for climbers that can suggest a list of _n_ climbing routes within a particular climbing area. For an individual climber the recommender should base recommendations on the types of routes the climber liked before and based on what other climbers with a comparable climbing history have liked. The recommended climbs should be ordered by their attractiveness to the climber. 
 
-It will be interesting to see if any of the climbers stats (e.g. age, height) have an impact on the recommendations. In the climbing community short and tall climbers are always picking on each other ("You are not climbing, you are just reaching up for the high holds because you are so tall.")
+Although, our solution presents the top _n_ climbs, the problem is basically a rating prediction problem. We want to predict the rating a climber would give an unrated route. Then the top n rated climbs would form the top n recommendations.
 
 For climbers without any personal climbing record, a simple recommendation should give a list of the top n climbs within the area based on average ratings from all climbers.
+
+In particular I will explore **collaborative filtering** techniques such as
+
+* k nearest neighbor (KNN)
+* k means clustering
+* item based collaborative filtering
+* matrix factorization (SVD)
 
 ### Benchmark Model
 
@@ -85,30 +123,45 @@ We will therefore compare our model to the results of
 
 ### Evaluation Metrics
 
-Ranking and recommendation problems in general lend themselves to using the following metrics
+Basically, our problem is a ranking problem. We want to show the most attractive and suitable climbs to a user. However, we'll frame it as a rating prediction problem.  
+Using different models we will predict ratings of so far unrated routes. For this purpose we will use **RMSE** as our evaluation metric.
 
-* Mean average precision (MAP)
-* Normlaized discounted cumulative gain (NDCG)
-* Root mean squared error (RMSE)
+The project model as well as all of the benchmark models can be evaluated using RMSE, thus making this metric the favorable choice.
 
-During the course of the project I will explore which of these metrics is best applied in our case.
 
 ### Project Design
 
 When executing this project, I will follow those main steps
 
 **1 - Data exploration**  
-I will start with some data exploration to gain insights about data distribution, outliers (if any) and missing values.
+I will start with some data exploration to gain insights about data distribution (e.g. how many climbs are rated vs unrated, number of ratings per user), outliers (e.g. climbs in very low or very high grades) and missing values (e.g. route name missing or nonsense/ cannot be matched with any actual route).
+
+During data exploration I want to quantify how bad the situation is around misspelling in route names, e.g. misspellings of route _Baggi ned_ (engl. _Won't manage_) such as _BAGGI AND_, _Baggi Nad_, _Baggi Net_.
 
 **2 - Data preparation**  
-During preparation I will try to extract a list of unique routes. In the dataset a record contains currently the route that was climbed and if the climber provided it, also a rating. As such there will be many duplicate routes. String similarity measures like Sørensen–Dice coefficient or Levensthein distance should help here. 
+During preparation I will try to extract a list of unique routes. In the dataset a record contains currently the route that was climbed and if the climber provided it, also a rating. As such there will be many duplicate routes. String similarity measures like Sørensen–Dice coefficient or Levensthein distance should help here. Getting to a unique list of routes is important for creating a _climber X routes_ matrix containing ratings.
 
-Additionally, I will transform data, e.g. one-hot encoding of categorical attributes like `country` or `city` and decide how to do handle missing data.
+In case a rating cannot be attributed to any route, e.g. in case route name is missing, I will drop those items.
 
 **3 - Model exploration**  
-During the model exploration I will first look at exploring data with KMeans and try to find natural clusters of climbers with a preference for certain types of climbs.
+Durin model exploration I will try out a number of alternatives to predict ratings of unrated climbs. (Hence RMSE, as mentioned in an earlier paragraph) is a suitable metric to evaluate all of the approaches).
 
-In case results are not satisfactory, I may explore further using Collaborative Filtering (e.g. using Surprise[^fifth], Association Rules... and decide on the best model.
+Starting out with a user-based approach which is a sort of k-nearest neighbors algorithm.
+
+Set up _n X m_ matrix consisting of the ratings of _n_ climbers and _m_ routes. Each element _(i, j)_ represents the rating climber _i_ rated route _j_. 
+
+For each route _j_ climber _i_ has not climbed yet, we find similar climbers to climber _i_ (e.g. Cosine, Pearson) that have rated route _j_. 
+Then I will calculate a rating based on rating of k nearest neighbors.
+We recommend the _n_ top rated routes to the climber.
+
+As an alternative I will be exploring data with **K-Means** algorithm and try to find natural clusters of climbers. The _Elbow method_ should help finding a good number of clusters. The elbow method works by plotting the ascending values of k versus the total error calculated using that k.  
+For users within a cluser, I will recommend routes on other climbers' 
+
+As a third potential option I may look into **Item-based collaborative filtering**, which is a model-based algorithm that recommends items based on their similarity. Again this uses similarity functions such as Cosine and Pearson.
+
+If it turns out that the above three methods do not yield satisfactory results, e.g. due to sparsity in data, I may look into a fourth option:  
+
+Apply SVD algorithm, e.g. using `surprise` package.
 
 **4 - Fine-tuning of the model**
 Once the most promising model is found, I will continue to fine-tune the model to improve results. At this stage I will also employ evaluation metrics as mentioned in an earlier paragraph.
