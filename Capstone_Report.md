@@ -42,28 +42,65 @@ As I am an avid climber myself, this project is something I take a strong person
 [^first]: [What is Rock Climbing?](https://riverrockclimbing.com/new-climbers/what-is-rock-climbing/)
 
 ### Problem Statement
-In this section, you will want to clearly define the problem that you are trying to solve, including the strategy (outline of tasks) you will use to achieve the desired solution. You should also thoroughly discuss what the intended solution will be for this problem. Questions to ask yourself when writing this section:
-- _Is the problem statement clearly defined? Will the reader understand what you are expecting to solve?_
-- _Have you thoroughly discussed how you will attempt to solve the problem?_
-- _Is an anticipated solution clearly defined? Will the reader understand what results you are looking for?_
+
+`start Udacity`  
+In this section, you will want to clearly define the problem that you are trying to solve, including the strategy (outline of tasks) you will use to achieve the desired solution. You should also thoroughly discuss what the intended solution will be for this problem. Questions to ask yourself when writing this section:  
+- _Is the problem statement clearly defined? Will the reader understand what you are expecting to solve?_  
+- _Have you thoroughly discussed how you will attempt to solve the problem?_  
+- _Is an anticipated solution clearly defined? Will the reader understand what results you are looking for?_  
+`end Udacity`  
+
+The structure of the problem is that of a **Ranking problem** or more precise a **Collaborative Filtering problem**, where we try to suggest climbs based on a climber's similarity to other climbers.  
+
+We will try to measure similarity based on ratings given to a climbed route. Climbers who climbed the same routes and gave those routes similar ratings, might also agree in their opinion on routes they haven't climbed, yet.  
+
+So, we'll try to cluster climbers that climbed similar routes and that gave similar ratings to those routes using K-Means. This is an *Unsupervised Learning* technique.
+
+Once we have identified clusters of climbers with similar taste, we'll determine a cluster's most recommended routes based on ratings and number of ratings. This is a **user based collaborative filtering** technique. 
+
+In order to give a climber a personal recommendation, we have to determine to which cluster he or she belongs and recommend the **top n routes** from the cluster's top recommended routes that he or she has not climbed yet.
+
+Our anticipated solution will be:  
+**For any given climber, we can provide a personal recommendation of *n* routes that he or she has not climbed before.**
+
+The following tasks should get us there:  
+
+1. Consolidation of climbing routes (major cleanup/prep work, because users make typos in route names which result in duplicate routes in the data set)
+- Match climbers' recommendations with routes  
+- Determine cluster size using *Silhouette Score*  
+- Cluster climbers based on recommendations using *K-Means*.  
+- Calculate *Weighted Rating* of every route for climber's cluster to receive an absolute ranking of all routes.  
+- Recommend top *n* routes that climber has not climbed before.  
+
 
 ### Metrics
 In this section, you will need to clearly define the metrics or calculations you will use to measure performance of a model or result in your project. These calculations and metrics should be justified based on the characteristics of the problem and problem domain. Questions to ask yourself when writing this section:
 - _Are the metrics you’ve chosen to measure the performance of your models clearly discussed and defined?_
 - _Have you provided reasonable justification for the metrics chosen based on the problem and solution?_
 
+Basically, our problem is a ranking problem. We want to show the most attractive and suitable climbs to a user. However, we'll frame it as a rating prediction problem.  
+Using different models we will predict ratings of so far unrated routes. For this purpose we will use **RMSE** as our evaluation metric.
+
+The project model as well as all of the benchmark models can be evaluated using RMSE, thus making this metric the favorable choice.
+
+
 
 ## II. Analysis
 _(approx. 2-4 pages)_
 
 ### Data Exploration
+`start Udacity`  
 In this section, you will be expected to analyze the data you are using for the problem. This data can either be in the form of a dataset (or datasets), input data (or input files), or even an environment. The type of data should be thoroughly described and, if possible, have basic statistics and information presented (such as discussion of input features or defining characteristics about the input or environment). Any abnormalities or interesting qualities about the data that may need to be addressed have been identified (such as features that need to be transformed or the possibility of outliers). Questions to ask yourself when writing this section:
 - _If a dataset is present for this problem, have you thoroughly discussed certain features about the dataset? Has a data sample been provided to the reader?_
 - _If a dataset is present for this problem, are statistics about the dataset calculated and reported? Have any relevant results from this calculation been discussed?_
 - _If a dataset is **not** present for this problem, has discussion been made about the input space or input data for your problem?_
-- _Are there any abnormalities or characteristics about the input space or dataset that need to be addressed? (categorical variables, missing values, outliers, etc.)_
+- _Are there any abnormalities or characteristics about the input space or dataset that need to be addressed? (categorical variables, missing values, outliers, etc.)_  
+`end Udacity`  
 
-Our dataset contains 114,587 entries. 60,303 out of these contain a rating. That is approx. 52.63%.
+The data set for this project was downloaded from Kaggle at  
+[8anu climbing logbook](https://www.kaggle.com/dcohen21/8anu-climbing-logbook)
+
+Here is an overview of the data contained in the data set.
 
 | Column | Description | Datatype | Use | 
 |:------ |:------ |:------:|:------:| 
@@ -91,11 +128,121 @@ Our dataset contains 114,587 entries. 60,303 out of these contain a rating. That
 | `birthdate` | The climber's date of birth | date | statistics | 
 | `started_climbing` | The year the climber started climbing. | int | statistics | 
 
+In the table above the column `Use` indicated how we plan to use the given column.
+
+- `target` - this is a target attribute.
+- `yes` - this column will be used during exploration and analysis.
+- `no` - not planned to use that column during analysis and exploration.
+- `statistics` - this column will not be used for analysis but may be interesting later on to do user statistics etc.
+
+Our dataset contains __114,587 logged climbs__. 60,303 out of these contain a rating. That is approx. 52.63%.
+
+Let's look at the distribution of routes by climbing grade (= difficulty level of the route) to understand whether our climbers are mostly beginners, advanced or professionals.
+
+![ascents by grade (dented)](images/ascents_by_grade_dented.png)
+
+Our distribution seems to have the general form of a bell shape, i.e. a Gaussian distribution. What seems odd though, are the two dents in the distribution at 6c and 7b.
+
+For this to understand we need to have some background knowledge on the different climbing grading systems used in different countries. The grading system used by 8a.nu, which is the source of our data set, is the _French_ grading system. In Germany a different grading system is used called _UIAA_.
+
+One peculiar thing about different grading systems is, that they do not follow the same step size. E.g. in French scale grading the step from one grade to the next higher grade could be smaller than the steps in between grades in UIAA. This can be seen when looking at a grade comparison chart as shown below.
+
+![Climbing Grades Comparison](images/climbing_grades_comparison.png)
+
+All the route in Germany are given grades following UIAA scale. If a climber wants to log a climb in Germany with a UIAA grade on 8a.nu, he has to convert the grade to French scale. As there are no real corresponding entries for 6c and 7b in the UIAA scale, this explains the dent in our distribution.
+
+Therefore, joining the numbers from 6c and 6b+, as well as 7a+ and 7b seems reasonable. 
+
+![ascents by grade (adjusted)](images/ascents_by_grade_adjusted.png)
+
+And the result of the distribution of logged climbs is now as expected.
+
+With the majority of climbs around 6c+, 7a level, what does this actually mean? Let's take a look at the assessment given by the website [thecrag.com](https://www.thecrag.com/en/article/grades#grade-ranges). And we can see that the majority of logged ascents are in the upper _Experienced_ range.
+
+![climbing levels](images/climbing_levels.png)
+
+#### Missing values
+
+Let us take a look if we have **missing values** or **zero values**.
+
+Number of missing values per column:
+
+```
+id           0
+sector_id    0
+sector       0
+route        0
+rating       0
+user_id      0
+dtype: int64
+```
+This means there are no entries missing in the columns that we look at.
+
+Number of zero values per column:
+
+```
+id               0
+sector_id    12301
+sector           0
+route            0
+rating       48291
+user_id          0
+dtype: int64
+```
+However, there a quite a significant amount of sector_IDs missing and also a lot of ratings.
+
+#### Unique values
+A naive calculation on the number of unique sectors and routes within these sectors. Submitted by a number of distinct users.
+
+```
+sector_id      350
+route        12471
+user_id       3292
+dtype: int64
+```
+Why do we call the above estimate _naive_? 
+
+According to [climb-europe.com](http://www.climb-europe.com/RockClimbingGermany/RockClimbingFrankenjura.html) _"there are approximately 1,000 crags spread out in a beautiful forest terrain"_ (Note that _crags_ in the above quote is the same as _sectors_ in our dataset.) This seems fine since in our dataset there are 351 different sectors noted.
+
+In the article it continues to claim that _Frankenjura boasts in excess of 10,000 routes._ Now this is where we should get a little suspicious. In only 350 sectors our dataset apparently contains already more than 12,000 routes - which is well above the 10,000 mentioned in the article.
+
+Lets dig deeper here.
+
+What are the records where `sector_id` is 0?  
+We take a look at a number of samples.
+
+![sector_id == 0](images/sector_id_zero.png)
+
+
 ### Exploratory Visualization
-In this section, you will need to provide some form of visualization that summarizes or extracts a relevant characteristic or feature about the data. The visualization should adequately support the data being used. Discuss why this visualization was chosen and how it is relevant. Questions to ask yourself when writing this section:
-- _Have you visualized a relevant characteristic or feature about the dataset or input data?_
-- _Is the visualization thoroughly analyzed and discussed?_
-- _If a plot is provided, are the axes, title, and datum clearly defined?_
+`start Udacity`  
+In this section, you will need to provide some form of visualization that summarizes or extracts a relevant characteristic or feature about the data. The visualization should adequately support the data being used. Discuss why this visualization was chosen and how it is relevant. Questions to ask yourself when writing this section:  
+- _Have you visualized a relevant characteristic or feature about the dataset or input data?_  
+- _Is the visualization thoroughly analyzed and discussed?_  
+- _If a plot is provided, are the axes, title, and datum clearly defined?_  
+`end Udacity`  
+
+#### Missing values
+
+Lets visualize the **Missing** and **Zero values** per column.
+
+![Missing values](images/missing_values.png)
+
+In our data set `0` is in indicator for missing values, except for `sex` where `0` indicates `male` (and `1` for `female`).
+
+From the graph above we can conclude that we have missing data in `sector_id` and `rating`.
+
+Since `sector_id` and `rating` are important for our analysis, we have to consider what to do about those missing values during Data Preparation later on.
+
+#### Analysis of our target variable `rating`
+
+![Rating](images/ratings_distribution.png)
+
+From the distribution of the target variable `rating`, we can see that there are four distinct values. With 52.7% of ratings equal to 0, only about half of the ascents have been rated.
+
+In the climbing community it is commonplace to rate only good climbs by marking them with a star. Thus, the values `1`, `2` or `3` correspond to one, two or three stars. Where one star is a good route and three stars is an exceptional good climb.
+
+Hence the value `0`, or zero stars, denotes that a climb was either not rated or was not worth a star according to that used.
 
 ### Algorithms and Techniques
 In this section, you will need to discuss the algorithms and techniques you intend to use for solving the problem. You should justify the use of each one based on the characteristics of the problem and the problem domain. Questions to ask yourself when writing this section:
