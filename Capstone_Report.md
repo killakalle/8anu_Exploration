@@ -6,7 +6,7 @@ November, 2018
 ## I. Definition
 _(approx. 1-2 pages)_
 
-### Project Overview
+### OK - Project Overview
 The goal of this project is to build a recommender system for climbing routes within a given climbing area. The system will take a climbers preference and his or her stats into consideration.
 
 My Capstone Project is located in the world of **rock climbing**.  
@@ -41,7 +41,7 @@ As I am an avid climber myself, this project is something I take a strong person
 
 [^first]: [What is Rock Climbing?](https://riverrockclimbing.com/new-climbers/what-is-rock-climbing/)
 
-### Problem Statement
+### OK - Problem Statement
 
 `start Udacity`  
 In this section, you will want to clearly define the problem that you are trying to solve, including the strategy (outline of tasks) you will use to achieve the desired solution. You should also thoroughly discuss what the intended solution will be for this problem. Questions to ask yourself when writing this section:  
@@ -73,7 +73,7 @@ The following tasks should get us there:
 - Recommend top *n* routes that climber has not climbed before.  
 
 
-### Metrics
+### OK - Metrics
 In this section, you will need to clearly define the metrics or calculations you will use to measure performance of a model or result in your project. These calculations and metrics should be justified based on the characteristics of the problem and problem domain. Questions to ask yourself when writing this section:
 - _Are the metrics you’ve chosen to measure the performance of your models clearly discussed and defined?_
 - _Have you provided reasonable justification for the metrics chosen based on the problem and solution?_
@@ -88,7 +88,7 @@ The project model as well as all of the benchmark models can be evaluated using 
 ## II. Analysis
 _(approx. 2-4 pages)_
 
-### Data Exploration
+### OK - Data Exploration
 `start Udacity`  
 In this section, you will be expected to analyze the data you are using for the problem. This data can either be in the form of a dataset (or datasets), input data (or input files), or even an environment. The type of data should be thoroughly described and, if possible, have basic statistics and information presented (such as discussion of input features or defining characteristics about the input or environment). Any abnormalities or interesting qualities about the data that may need to be addressed have been identified (such as features that need to be transformed or the possibility of outliers). Questions to ask yourself when writing this section:
 - _If a dataset is present for this problem, have you thoroughly discussed certain features about the dataset? Has a data sample been provided to the reader?_
@@ -204,17 +204,32 @@ Why do we call the above estimate _naive_?
 
 According to [climb-europe.com](http://www.climb-europe.com/RockClimbingGermany/RockClimbingFrankenjura.html) _"there are approximately 1,000 crags spread out in a beautiful forest terrain"_ (Note that _crags_ in the above quote is the same as _sectors_ in our dataset.) This seems fine since in our dataset there are 351 different sectors noted.
 
-In the article it continues to claim that _Frankenjura boasts in excess of 10,000 routes._ Now this is where we should get a little suspicious. In only 350 sectors our dataset apparently contains already more than 12,000 routes - which is well above the 10,000 mentioned in the article.
-
-Lets dig deeper here.
-
-What are the records where `sector_id` is 0?  
+However, let's look closer here. What are the records where `sector_id` is 0?  
 We take a look at a number of samples.
 
 ![sector_id == 0](images/sector_id_zero.png)
 
+So, what we can see is, that `sector_id == 0` actually does not belong to a proper sector, but rather denotes that sector is not known in this case. Later we'll have to remove those entries.
 
-### Exploratory Visualization
+In the article it continues to claim that _Frankenjura boasts in excess of 10,000 routes._ Now this is where we should get a little suspicious. In only 350 sectors our dataset apparently contains already more than 12,000 routes - which is well above the 10,000 mentioned in the article.
+
+Lets dig deeper here. Maybe there are a number of duplicates in the registered routes. Let's see if an example can confirm this.
+
+```
+X_train[X_train['route'].str.startswith('knack')].drop_duplicates(subset=['route'])['route']
+```
+Output:
+
+```
+108084       knack  back
+101251    knack und back
+38966     knack and back
+Name: route, dtype: object
+```
+We will have to consolidate those duplicates during Preprocessing.
+
+
+### OK - Exploratory Visualization
 `start Udacity`  
 In this section, you will need to provide some form of visualization that summarizes or extracts a relevant characteristic or feature about the data. The visualization should adequately support the data being used. Discuss why this visualization was chosen and how it is relevant. Questions to ask yourself when writing this section:  
 - _Have you visualized a relevant characteristic or feature about the dataset or input data?_  
@@ -244,11 +259,48 @@ In the climbing community it is commonplace to rate only good climbs by marking 
 
 Hence the value `0`, or zero stars, denotes that a climb was either not rated or was not worth a star according to that used.
 
-### Algorithms and Techniques
-In this section, you will need to discuss the algorithms and techniques you intend to use for solving the problem. You should justify the use of each one based on the characteristics of the problem and the problem domain. Questions to ask yourself when writing this section:
-- _Are the algorithms you will use, including any default variables/parameters in the project clearly defined?_
-- _Are the techniques to be used thoroughly discussed and justified?_
-- _Is it made clear how the input data or datasets will be handled by the algorithms and techniques chosen?_
+Approximately 2/3 of the users have rated at least one item, i.e. gave a rating of 1, 2 or 3.
+
+Let's take a look at how many ratings users typically gave.
+
+![Ratings by user](images/ratings_by_user.png)
+
+From the above plot we can see that there must be one or several outliers with a large number of ratings (around 1600). Let's apply the logarithm on the y-axis to get a better picture.
+
+![Ratings by user](images/ratings_by_user_logscale.png)
+
+Now, this has more information. We can see that approx. 30% of users gave no rating at all. And more than 99% of users gave less than 200 ratings.
+
+Let's look at the percentiles information in detail to confirm this.
+
+```
+count    3292.000000
+mean       13.177400
+std        49.680102
+min         0.000000
+25%         0.000000
+33%         1.000000
+50%         2.000000
+75%         9.000000
+90%        29.000000
+95%        53.000000
+99%       153.270000
+max      1665.000000
+Name: rating, dtype: float64
+```
+
+### (OK) - Algorithms and Techniques
+`start Udacity`  
+In this section, you will need to discuss the algorithms and techniques you intend to use for solving the problem. You should justify the use of each one based on the characteristics of the problem and the problem domain. Questions to ask yourself when writing this section:  
+- _Are the algorithms you will use, including any default variables/parameters in the project clearly defined?_  
+- _Are the techniques to be used thoroughly discussed and justified?_  
+- _Is it made clear how the input data or datasets will be handled by the algorithms and techniques chosen?_  
+
+`end Udacity`
+
+Our problem is a _Collaborative Filtering_ problem. As such, this problem lends itself to exploring data with **K-Means** algorithm and try to find natural clusters of climbers. Our main parameter for K-Means is the number of clusters.
+
+The _Silhouette Score_ is a suitable way to find out the number of clusters we should aim for using K-Means. Through K-Means we hope to achieve a clustering of climbers based on their similarity. Climbers within the same cluster should then have a high probability of giving high ratings to the same routes.
 
 ### Benchmark
 In this section, you will need to provide a clearly defined benchmark result or threshold for comparing across performances obtained by your solution. The reasoning behind the benchmark (in the case where it is not an established result) should be discussed. Questions to ask yourself when writing this section:
@@ -260,10 +312,30 @@ In this section, you will need to provide a clearly defined benchmark result or 
 _(approx. 3-5 pages)_
 
 ### Data Preprocessing
+`start Udacity`  
 In this section, all of your preprocessing steps will need to be clearly documented, if any were necessary. From the previous section, any of the abnormalities or characteristics that you identified about the dataset will be addressed and corrected here. Questions to ask yourself when writing this section:
-- _If the algorithms chosen require preprocessing steps like feature selection or feature transformations, have they been properly documented?_
-- _Based on the **Data Exploration** section, if there were abnormalities or characteristics that needed to be addressed, have they been properly corrected?_
-- _If no preprocessing is needed, has it been made clear why?_
+- _If the algorithms chosen require preprocessing steps like feature selection or feature transformations, have they been properly documented?_  
+- _Based on the **Data Exploration** section, if there were abnormalities or characteristics that needed to be addressed, have they been properly corrected?_  
+- _If no preprocessing is needed, has it been made clear why?_  
+`end Udacity`  
+
+As a first preprocessing step we'll remove all entries where `sector_id == 0`. We have established earlier, that here the actual sector is not known, thus the entrie is not usable.
+
+Now we'll have to tackle route name consolidation. As identified earlier during _Data Exploration_ there are many duplicate routes. Since route names are per sector, we can reduce processing amount by consolidating route names within each sector.
+
+The following steps will take us to a consolidated list of routes:  
+
+- Transform all route names to lowercase and remove special characters (`string_cleaning(df, columns)`)
+- Find similar route names by applying _Jaro Winkler Distance_ on the route names.  
+- Pick the most used route name as the route name of choice
+- Do this for all sectors
+
+Eventually, we only have to get unique values for all sector-route names to arrive at a list of unique routes.
+
+Luckily, getting a unique list of users is easy, by just applying `.drop_duplicates()` on `user_id`.
+
+Finally, we'll also get a list of unique ratings, by excluding `rating == 0` values as this is the same as _not rated_.
+
 
 ### Implementation
 In this section, the process for which metrics, algorithms, and techniques that you implemented for the given data will need to be clearly documented. It should be abundantly clear how the implementation was carried out, and discussion should be made regarding any complications that occurred during this process. Questions to ask yourself when writing this section:
