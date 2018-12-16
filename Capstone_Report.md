@@ -311,7 +311,7 @@ In this section, you will need to provide a clearly defined benchmark result or 
 ## III. Methodology
 _(approx. 3-5 pages)_
 
-### Data Preprocessing
+### OK - Data Preprocessing
 `start Udacity`  
 In this section, all of your preprocessing steps will need to be clearly documented, if any were necessary. From the previous section, any of the abnormalities or characteristics that you identified about the dataset will be addressed and corrected here. Questions to ask yourself when writing this section:
 - _If the algorithms chosen require preprocessing steps like feature selection or feature transformations, have they been properly documented?_  
@@ -330,7 +330,7 @@ The following steps will take us to a consolidated list of routes:
 - Pick the most used route name as the route name of choice
 - Do this for all sectors
 
-Eventually, we only have to get unique values for all sector-route names to arrive at a list of unique routes.
+Eventually, we only have to get unique values for all sector-route names to arrive at a list of unique routes. After the consolidation our new count for routes is __6754__, which is a lot less than what our naive count was and seems a lot more reasonable.
 
 Luckily, getting a unique list of users is easy, by just applying `.drop_duplicates()` on `user_id`.
 
@@ -338,10 +338,101 @@ Finally, we'll also get a list of unique ratings, by excluding `rating == 0` val
 
 
 ### Implementation
+`start Udacity`  
 In this section, the process for which metrics, algorithms, and techniques that you implemented for the given data will need to be clearly documented. It should be abundantly clear how the implementation was carried out, and discussion should be made regarding any complications that occurred during this process. Questions to ask yourself when writing this section:
-- _Is it made clear how the algorithms and techniques were implemented with the given datasets or input data?_
-- _Were there any complications with the original metrics or techniques that required changing prior to acquiring a solution?_
-- _Was there any part of the coding process (e.g., writing complicated functions) that should be documented?_
+- _Is it made clear how the algorithms and techniques were implemented with the given datasets or input data?_  
+- _Were there any complications with the original metrics or techniques that required changing prior to acquiring a solution?_  
+- _Was there any part of the coding process (e.g., writing complicated functions) that should be documented?_  
+
+`end Udacity`  
+ As outlined earlier, we want to apply K-Means to find clusters of similar users. The first step in that process is _pairing_ the list of routes with the list of user ratings using `pd.pivot_table(X_train_ratings, index='user_id', columns= 'sector_route', values='rating')`.
+ 
+ The results looks like this:
+ 
+ ![Routes and ratings merged](images/routes_ratings_merged.png)
+ 
+ The many `NaN` values are an indicator for how sparse this matrix is - which is typical for user rating matrices.
+ 
+ Before going into clustering, we have to transform our matrix into a real sparse matrix, using `to_coo()`.
+ 
+ Another useful precursor for clustering with K-Means is finding out how many clusters we should aim to find. The __Silhoutte score__ will help us out here. The corresponding silhoutte score in our case looks as following:
+ 
+ ![Silhouette score](images/silhouette_score.png)
+ 
+ According to the diagram the best number of clusters is 2. This is not really the answer we were hoping for. If there are only two clusters, then our assumption of grouping similar users into clusters seems not to hold as apparently there are not a lot of dividing characteristics among users. However, let's explore further before taking a decision.
+ 
+ Knowing the number of clusters, producing the clustering is a simple one liner  
+ `predictions = KMeans(n_clusters=2, algorithm='full').fit_predict(sparse_ratings)`
+ 
+ As the result of K-Means' `fit_predict` is an `ndarray` we have to add this as a new column to our dataframe to make use of it.
+
+```
+clustered = pd.concat([user_route_ratings.reset_index(),
+                      pd.DataFrame({'group': predictions})], axis=1) 
+```
+
+Let's see how the actual numbers look like for number of users within each cluster.
+
+```
+1    2121
+0      18
+Name: group, dtype: int64
+```
+These numbers confirm our suspicion that the clustering has not brought the diversivication of users that we had hoped for.
+
+Let's look at a visualization of the resulting clusters regardless.
+
+![Cluster visualization](images/cluster_vis.png)
+
+The routes are sorted by most rated and best rated from left to right. Each square represents the rating of one user.
+
+#### Prediction - First attempt
+
+In order to get our __prediction__ of recommended routes for a single user, we will do the following for each user:
+
+1. Determine to which cluster a user belongs
+1. Calculate average rating of each route within cluster and sort routes accordingly
+1. Recommend the top n routes based on our calculated average that user has not climbed, yet.
+
+##### 1 - Cluster membership
+The function `cluster_membership(clustered, user_id)` is a simple lookup in the `clustered` dataframe and yield the user's `cluster_id`.
+
+##### 2 - Average rating per route
+To calculate a route's average rating within a cluster we'll use the following _Weighted Rating_ formula:  
+
+![Weighted Rating Formula](images/weighted_rating_formula.png)
+
+where  
+
+- *v* is the number of ratings for that route
+- *m* is the minimum ratings required to be listed in the chart
+- *R* is the average rating of the route
+- *C* is the mean vote across the whole report
+
+This formula makes sure that the number of ratings is being considered and avoids the problem of a route with a single three star rating ending up at the top of our list.
+
+##### 3 - Top n routes per climber
+
+The function `top_n_routes_cluster(cluster, n=0)` returns the top n routes of a given cluster sorted by the Weighted Rating formula described above.
+
+The functiuon `top_n_routes_user(clustered, user_id, n)` uses the results of `top_n_routes_cluster(cluster, n=0)` to determine a user's top n routes, i.e. the routes a user has climbed already are excluded from this list.
+
+#### Qualitative result check
+
+For a qualitative result check, let's look at the top 20 recommended routes within a cluster and count how many of the routes show up in the Top 100 list of climbing magazine _klettern_. The list is available on the [klettern.de](https://www.klettern.de/sixcms/media.php/8/Top100-Kletterrouten_Frankenjura.pdf) website.
+
+We retrieve the top 20 routes of cluster 0 using
+```top_n_routes_cluster(cluster, 20)```
+
+And the result looks as following, sorted by weighted rating:
+
+![Top 20 routes](images/top_20_cluster.png)
+
+We find 9 out of 20 recommended routes also in the Top 100 list of klettern.de. So, our recommendations seem to be going the right direction.
+
+![Qualitative Benchmark](images/qualitative_benchmark.png)
+
+The suggested routes are all in the upper experienced to expert level. Which is no surprise, as we have seen earlier, that the majority of climbed routes is from that range.
 
 ### Refinement
 In this section, you will need to discuss the process of improvement you made upon the algorithms and techniques you used in your implementation. For example, adjusting parameters for certain models to acquire improved solutions would fall under the refinement category. Your initial and final solutions should be reported, as well as any significant intermediate results as necessary. Questions to ask yourself when writing this section:
