@@ -289,7 +289,7 @@ max      1665.000000
 Name: rating, dtype: float64
 ```
 
-### (OK) - Algorithms and Techniques
+### OK - Algorithms and Techniques
 `start Udacity`  
 In this section, you will need to discuss the algorithms and techniques you intend to use for solving the problem. You should justify the use of each one based on the characteristics of the problem and the problem domain. Questions to ask yourself when writing this section:  
 - _Are the algorithms you will use, including any default variables/parameters in the project clearly defined?_  
@@ -302,11 +302,15 @@ Our problem is a _Collaborative Filtering_ problem. As such, this problem lends 
 
 The _Silhouette Score_ is a suitable way to find out the number of clusters we should aim for using K-Means. Through K-Means we hope to achieve a clustering of climbers based on their similarity. Climbers within the same cluster should then have a high probability of giving high ratings to the same routes.
 
-### Benchmark
-In this section, you will need to provide a clearly defined benchmark result or threshold for comparing across performances obtained by your solution. The reasoning behind the benchmark (in the case where it is not an established result) should be discussed. Questions to ask yourself when writing this section:
-- _Has some result or value been provided that acts as a benchmark for measuring performance?_
-- _Is it clear how this result or value was obtained (whether by data or by hypothesis)?_
+### OK - Benchmark
+`start Udacity` 
+In this section, you will need to provide a clearly defined benchmark result or threshold for comparing across performances obtained by your solution. The reasoning behind the benchmark (in the case where it is not an established result) should be discussed. Questions to ask yourself when writing this section:  
+- _Has some result or value been provided that acts as a benchmark for measuring performance?_  
+- _Is it clear how this result or value was obtained (whether by data or by hypothesis)?_  
+`end Udacity` 
 
+As a benchmark we'll use a __random recommender__, i.e. for a given user, any route will be given a random rating from 1, 2 or 3 stars. This will be our quantitative measurement to compare against. Results for this benchmark (RMSE) will be obtained during implementation as data pre-processing is required.  
+For a __qualitative benchmark__, we'll compare results to the recommendations by climbing magazine _klettern.de_.
 
 ## III. Methodology
 _(approx. 3-5 pages)_
@@ -434,51 +438,123 @@ We find 9 out of 20 recommended routes also in the Top 100 list of klettern.de. 
 
 The suggested routes are all in the upper experienced to expert level. Which is no surprise, as we have seen earlier, that the majority of climbed routes is from that range.
 
-### Refinement
-In this section, you will need to discuss the process of improvement you made upon the algorithms and techniques you used in your implementation. For example, adjusting parameters for certain models to acquire improved solutions would fall under the refinement category. Your initial and final solutions should be reported, as well as any significant intermediate results as necessary. Questions to ask yourself when writing this section:
-- _Has an initial solution been found and clearly reported?_
-- _Is the process of improvement clearly documented, such as what techniques were used?_
-- _Are intermediate and final solutions clearly reported as the process is improved?_
+We still need to tackle the problem of the few clusters. With only two clusters of users and more than 90% of users in one cluster, we can hardly provide personalised recommendations.
 
+Let's try a __Matrix Factorization based algorithm__ for an alternative. The [Surprise package](http://surpriselib.com/) implements __SVD__, an algorithm that became popular for winning the 1M$ Netflix prize.
+
+We can use our cleaned ratings input also in combination with SVD. Training the SVD on our data is as simple as creating an algorithm object with `SVD()` and calling `cross_validate()` on our rating data.
+
+The output is measured using the _Root Mean Squared Error_.
+
+```
+Evaluating RMSE of algorithm SVD on 5 split(s).
+
+                  Fold 1  Fold 2  Fold 3  Fold 4  Fold 5  Mean    Std     
+RMSE (testset)    0.6527  0.6515  0.6457  0.6533  0.6519  0.6510  0.0027  
+Fit time          2.16    2.15    2.12    1.88    1.88    2.04    0.13    
+Test time         0.07    0.06    0.06    0.06    0.06    0.06    0.00    
+```
+In our case we get a `RMSE = 0.6510` on a 5-fold cross validation run.
+
+
+### Refinement
+`Udacity start`  
+In this section, you will need to discuss the process of improvement you made upon the algorithms and techniques you used in your implementation. For example, adjusting parameters for certain models to acquire improved solutions would fall under the refinement category. Your initial and final solutions should be reported, as well as any significant intermediate results as necessary. Questions to ask yourself when writing this section:
+
+- _Has an initial solution been found and clearly reported?_  
+- _Is the process of improvement clearly documented, such as what techniques were used?_  
+- _Are intermediate and final solutions clearly reported as the process is improved?_  
+`Udacity end`  
+
+In order to refine results of the SVD algorithm, we're executing a grid search on the parameters:
+
+- `n_epochs` - The number of iteration of the SGD procedure.
+- `lr_all` - The learning rate for all parameters.
+- `reg_all` - The regularization term for all parameters.
+
+The best results were achieved testing for RMSE by
+
+
+```
+0.6530371431723033
+{'n_epochs': 15, 'lr_all': 0.007, 'reg_all': 0.2}
+```
+Re-running the model with updated parameters from grid search yields a slightly improved mean `RMSE = 0.6489` (previous result was `RMSE = 0.6510`.
+
+```
+Evaluating RMSE of algorithm SVD on 5 split(s).
+
+                  Fold 1  Fold 2  Fold 3  Fold 4  Fold 5  Mean    Std     
+RMSE (testset)    0.6480  0.6464  0.6568  0.6485  0.6450  0.6489  0.0041  
+Fit time          1.66    1.52    1.48    1.57    1.60    1.57    0.06    
+Test time         0.12    0.06    0.06    0.06    0.07    0.08    0.02  
+```
 
 ## IV. Results
 _(approx. 2-3 pages)_
 
 ### Model Evaluation and Validation
-In this section, the final model and any supporting qualities should be evaluated in detail. It should be clear how the final model was derived and why this model was chosen. In addition, some type of analysis should be used to validate the robustness of this model and its solution, such as manipulating the input data or environment to see how the model’s solution is affected (this is called sensitivity analysis). Questions to ask yourself when writing this section:
-- _Is the final model reasonable and aligning with solution expectations? Are the final parameters of the model appropriate?_
-- _Has the final model been tested with various inputs to evaluate whether the model generalizes well to unseen data?_
-- _Is the model robust enough for the problem? Do small perturbations (changes) in training data or the input space greatly affect the results?_
-- _Can results found from the model be trusted?_
+`Udacity start`  
+In this section, the final model and any supporting qualities should be evaluated in detail. It should be clear how the final model was derived and why this model was chosen. In addition, some type of analysis should be used to validate the robustness of this model and its solution, such as manipulating the input data or environment to see how the model’s solution is affected (this is called sensitivity analysis). Questions to ask yourself when writing this section:  
+- _Is the final model reasonable and aligning with solution expectations? Are the final parameters of the model appropriate?_  
+- _Has the final model been tested with various inputs to evaluate whether the model generalizes well to unseen data?_  
+- _Is the model robust enough for the problem? Do small perturbations (changes) in training data or the input space greatly affect the results?_  
+- _Can results found from the model be trusted?_  
+`Udacity end`  
+
+In our final solution we were able to give an individual recommendation of the top n routes for any individual user. This solves the problem as stated earlier.  
+
+Our final model uses `SVD` to produce recommendations based solely on user ratings. This approach was chosen as the previous attempt, using K-Means, failed to produce a significant cluster diversification (more than 99% of users were ended up in the same cluster). SVD has proven very useful in recommendation tasks, e.g. Netflix movie recommendation.  
+
+
 
 ### Justification
+`Udacity start`  
 In this section, your model’s final solution and its results should be compared to the benchmark you established earlier in the project using some type of statistical analysis. You should also justify whether these results and the solution are significant enough to have solved the problem posed in the project. Questions to ask yourself when writing this section:
 - _Are the final results found stronger than the benchmark result reported earlier?_
 - _Have you thoroughly analyzed and discussed the final solution?_
 - _Is the final solution significant enough to have solved the problem?_
+`Udacity end`  
 
+The comparison of our solution to the initial benchmark:
+
+|Model|Random model|SVD   |SVD tuned|
+|-----|:----------:|:----:|:-------:|
+|RMSE |1.1321      |0.6510|0.6489   |
+
+We can see a significant improvement of _RMSE_ from Random model over the SVD to the tuned SVD model.
 
 ## V. Conclusion
 _(approx. 1-2 pages)_
 
 ### Free-Form Visualization
+`Udacity start`  
 In this section, you will need to provide some form of visualization that emphasizes an important quality about the project. It is much more free-form, but should reasonably support a significant result or characteristic about the problem that you want to discuss. Questions to ask yourself when writing this section:
 - _Have you visualized a relevant or important quality about the problem, dataset, input data, or results?_
 - _Is the visualization thoroughly analyzed and discussed?_
 - _If a plot is provided, are the axes, title, and datum clearly defined?_
+`Udacity end`  
 
 ### Reflection
+`Udacity start`  
 In this section, you will summarize the entire end-to-end problem solution and discuss one or two particular aspects of the project you found interesting or difficult. You are expected to reflect on the project as a whole to show that you have a firm understanding of the entire process employed in your work. Questions to ask yourself when writing this section:
 - _Have you thoroughly summarized the entire process you used for this project?_
 - _Were there any interesting aspects of the project?_
 - _Were there any difficult aspects of the project?_
 - _Does the final model and solution fit your expectations for the problem, and should it be used in a general setting to solve these types of problems?_
+`Udacity end`  
+
+The entire process of finding a solution to the initially outlined problem started with extraction of data from the source data base. After an analysis of the data at hand to discover missing values, irregularities, etc. within the data, corresponding data preparation steps were decideded.
+
+The data preparation comprised dealing with missing data and consolidation (cleaning) of route names as there were many duplicates in the data. Cleaning up the route names took considerably longer than I had anticipated. It reminded me of the statement that 80% of time usually is spent on data cleaning, when data 'from the wild' is to used.
 
 ### Improvement
+`Udacity start`  
 In this section, you will need to provide discussion as to how one aspect of the implementation you designed could be improved. As an example, consider ways your implementation can be made more general, and what would need to be modified. You do not need to make this improvement, but the potential solutions resulting from these changes are considered and compared/contrasted to your current solution. Questions to ask yourself when writing this section:
 - _Are there further improvements that could be made on the algorithms or techniques you used in this project?_
 - _Were there algorithms or techniques you researched that you did not know how to implement, but would consider using if you knew how?_
 - _If you used your final solution as the new benchmark, do you think an even better solution exists?_
+`Udacity end`  
 
 -----------
 
