@@ -341,7 +341,7 @@ Luckily, getting a unique list of users is easy, by just applying `.drop_duplica
 Finally, we'll also get a list of unique ratings, by excluding `rating == 0` values as this is the same as _not rated_.
 
 
-### Implementation
+### OK - Implementation
 `start Udacity`  
 In this section, the process for which metrics, algorithms, and techniques that you implemented for the given data will need to be clearly documented. It should be abundantly clear how the implementation was carried out, and discussion should be made regarding any complications that occurred during this process. Questions to ask yourself when writing this section:
 - _Is it made clear how the algorithms and techniques were implemented with the given datasets or input data?_  
@@ -440,9 +440,16 @@ The suggested routes are all in the upper experienced to expert level. Which is 
 
 We still need to tackle the problem of the few clusters. With only two clusters of users and more than 90% of users in one cluster, we can hardly provide personalised recommendations.
 
+### Alternative Implementation - SVD
+
 Let's try a __Matrix Factorization based algorithm__ for an alternative. The [Surprise package](http://surpriselib.com/) implements __SVD__, an algorithm that became popular for winning the 1M$ Netflix prize.
 
 We can use our cleaned ratings input also in combination with SVD. Training the SVD on our data is as simple as creating an algorithm object with `SVD()` and calling `cross_validate()` on our rating data.
+
+```
+svd = SVD()
+_ = cross_validate(svd, data, measures=['RMSE'], cv=5, verbose=True)
+```
 
 The output is measured using the _Root Mean Squared Error_.
 
@@ -456,8 +463,24 @@ Test time         0.07    0.06    0.06    0.06    0.06    0.06    0.00
 ```
 In our case we get a `RMSE = 0.6510` on a 5-fold cross validation run.
 
+For example user `user_id = 5512` the top 10 recommended routes are
 
-### Refinement
+```
+[('Bleisteine_offenbarung', 2.477913536224587),
+ ('Neumühle_witchcraft', 2.4578274392648605),
+ ('Weidlwanger Wand_the dance alone', 2.4490098743900375),
+ ('Ankatalwand_computerspiele', 2.4468467744030757),
+ ('Moritzer Turm_high gravity day', 2.431914905737715),
+ ('Heldwand_gtz von b', 2.3965405132721855),
+ ('Bärenschlucht_brentter', 2.3780055666037585),
+ ('Student_simon', 2.3712190426118784),
+ ('Kuhkirchner Wand_primeur de luxe', 2.3456612739659577),
+ ('Roter Fels_schaumschlger', 2.3223257808653144)]
+```
+
+In our qualitative check against the klettern.de top list, we can find again 50% of the routes recommended by our personal recommender. This, confirms that also our new recommender suggests routes which are among the best in the area.
+
+### OK - Refinement
 `Udacity start`  
 In this section, you will need to discuss the process of improvement you made upon the algorithms and techniques you used in your implementation. For example, adjusting parameters for certain models to acquire improved solutions would fall under the refinement category. Your initial and final solutions should be reported, as well as any significant intermediate results as necessary. Questions to ask yourself when writing this section:
 
@@ -493,7 +516,7 @@ Test time         0.12    0.06    0.06    0.06    0.07    0.08    0.02
 ## IV. Results
 _(approx. 2-3 pages)_
 
-### Model Evaluation and Validation
+### OK - Model Evaluation and Validation
 `Udacity start`  
 In this section, the final model and any supporting qualities should be evaluated in detail. It should be clear how the final model was derived and why this model was chosen. In addition, some type of analysis should be used to validate the robustness of this model and its solution, such as manipulating the input data or environment to see how the model’s solution is affected (this is called sensitivity analysis). Questions to ask yourself when writing this section:  
 - _Is the final model reasonable and aligning with solution expectations? Are the final parameters of the model appropriate?_  
@@ -506,9 +529,32 @@ In our final solution we were able to give an individual recommendation of the t
 
 Our final model uses `SVD` to produce recommendations based solely on user ratings. This approach was chosen as the previous attempt, using K-Means, failed to produce a significant cluster diversification (more than 99% of users were ended up in the same cluster). SVD has proven very useful in recommendation tasks, e.g. Netflix movie recommendation.  
 
+##### Assessing the robustness of our algorithm by comparing results of explicit vs implicit feedback.
 
+The SVD algorithm considers only __explicit feedback__. I.e. if a user gives a rating of one star, then this is counted as a one star rating. However, the __implicit feedback__ of a user is not considered. Implicit feedback means that a user, by chosing to rate a particular route he or she climbed (as opposed to not rating that route) already provides a positive indication for that route.
 
-### Justification
+The __SVD++__ algorithm can take that implicit feedback into account.
+
+```
+svd_pp = SVDpp(n_epochs=15, lr_all=0.007, reg_all=0.2)
+_ = cross_validate(svd_pp, data, measures=['RMSE'], cv=5, verbose=True)
+```
+
+```
+Evaluating RMSE of algorithm SVDpp on 5 split(s).
+
+                  Fold 1  Fold 2  Fold 3  Fold 4  Fold 5  Mean    Std     
+RMSE (testset)    0.6486  0.6493  0.6507  0.6437  0.6451  0.6475  0.0026  
+Fit time          44.89   44.37   44.21   44.51   44.41   44.48   0.23    
+Test time         1.19    1.15    1.12    1.07    1.19    1.14    0.04  
+```
+The following figure shows the similarity of RMSE of SVD vs SVD++. The random model is also part of the graph to put both algorithms into perspective.
+
+![Comparing RMSE](images/comparing_rmse.png)
+
+Thus we can see that there is no significant difference between implicit and explicit feedback.
+
+### OK - Justification
 `Udacity start`  
 In this section, your model’s final solution and its results should be compared to the benchmark you established earlier in the project using some type of statistical analysis. You should also justify whether these results and the solution are significant enough to have solved the problem posed in the project. Questions to ask yourself when writing this section:
 - _Are the final results found stronger than the benchmark result reported earlier?_
@@ -522,7 +568,9 @@ The comparison of our solution to the initial benchmark:
 |-----|:----------:|:----:|:-------:|
 |RMSE |1.1321      |0.6510|0.6489   |
 
-We can see a significant improvement of _RMSE_ from Random model over the SVD to the tuned SVD model.
+We can see a significant improvement of _RMSE_ from Random model over the SVD to the tuned SVD model (smaller RMSE is better), although the tuning did not gain much.
+
+Thus we have solved the problem of personalised recommendations for climbers.
 
 ## V. Conclusion
 _(approx. 1-2 pages)_
@@ -530,31 +578,29 @@ _(approx. 1-2 pages)_
 ### Free-Form Visualization
 `Udacity start`  
 In this section, you will need to provide some form of visualization that emphasizes an important quality about the project. It is much more free-form, but should reasonably support a significant result or characteristic about the problem that you want to discuss. Questions to ask yourself when writing this section:
-- _Have you visualized a relevant or important quality about the problem, dataset, input data, or results?_
-- _Is the visualization thoroughly analyzed and discussed?_
-- _If a plot is provided, are the axes, title, and datum clearly defined?_
+
+- _Have you visualized a relevant or important quality about the problem, dataset, input data, or results?_  
+- _Is the visualization thoroughly analyzed and discussed?_  
+- _If a plot is provided, are the axes, title, and datum clearly defined?_  
 `Udacity end`  
 
-### Reflection
-`Udacity start`  
-In this section, you will summarize the entire end-to-end problem solution and discuss one or two particular aspects of the project you found interesting or difficult. You are expected to reflect on the project as a whole to show that you have a firm understanding of the entire process employed in your work. Questions to ask yourself when writing this section:
-- _Have you thoroughly summarized the entire process you used for this project?_
-- _Were there any interesting aspects of the project?_
-- _Were there any difficult aspects of the project?_
-- _Does the final model and solution fit your expectations for the problem, and should it be used in a general setting to solve these types of problems?_
-`Udacity end`  
+### OK - Reflection
 
-The entire process of finding a solution to the initially outlined problem started with extraction of data from the source data base. After an analysis of the data at hand to discover missing values, irregularities, etc. within the data, corresponding data preparation steps were decideded.
+The entire process of finding a solution to the initially outlined problem started with extraction of data from the source data base. After an analysis of the data at hand to discover missing values, irregularities, etc. within the data, corresponding data preparation steps were decided.
 
 The data preparation comprised dealing with missing data and consolidation (cleaning) of route names as there were many duplicates in the data. Cleaning up the route names took considerably longer than I had anticipated. It reminded me of the statement that 80% of time usually is spent on data cleaning, when data 'from the wild' is to used.
 
-### Improvement
-`Udacity start`  
-In this section, you will need to provide discussion as to how one aspect of the implementation you designed could be improved. As an example, consider ways your implementation can be made more general, and what would need to be modified. You do not need to make this improvement, but the potential solutions resulting from these changes are considered and compared/contrasted to your current solution. Questions to ask yourself when writing this section:
-- _Are there further improvements that could be made on the algorithms or techniques you used in this project?_
-- _Were there algorithms or techniques you researched that you did not know how to implement, but would consider using if you knew how?_
-- _If you used your final solution as the new benchmark, do you think an even better solution exists?_
-`Udacity end`  
+Our initial idea of using K-Means to form clusters of similar users did not work out well. Using the Silhoutte Score we determined that the best number of clusters would be k=2. After running the clustering algorithm it became further clear that our data was not suitable for K-Means as more than 90% of users ended up in one of the two clusters. Hence, this was no basis for creating personalized recommendations.
+
+To the rescue came SVD, an algorithm that has proven its usability already on the Netflix movie recommender challenge.
+
+Using SVD we greatly improved over our benchmark, the random recommender model and thus solved our problem.  We compared also what would happen if we considered implicit feedback as well and found that there was no real change in our recommendation output.
+
+### OK - Improvement
+
+A practical improvement to the current solution could be, that a user has the ability to restrict the recommended routes to different constraints, such as specific country, specific climbing area, specific crag. This should be rather easy to implement.
+
+Potentially better predictions might be produced if the algorithm would consider additional user details (height, weight, years climbing experience, ...) instead of being based on only user ratings.
 
 -----------
 
