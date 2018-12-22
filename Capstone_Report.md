@@ -4,7 +4,6 @@ Dominik Lindenberger
 November, 2018
 
 ## I. Definition
-_(approx. 1-2 pages)_
 
 ### OK - Project Overview
 The goal of this project is to build a recommender system for climbing routes within a given climbing area. The system will take a climbers preference and his or her stats into consideration.
@@ -137,29 +136,7 @@ In the table above the column `Use` indicated how we plan to use the given colum
 
 Our dataset contains __114,587 logged climbs__. 60,303 out of these contain a rating. That is approx. 52.63%.
 
-Let's look at the distribution of routes by climbing grade (= difficulty level of the route) to understand whether our climbers are mostly beginners, advanced or professionals.
 
-![ascents by grade (dented)](images/ascents_by_grade_dented.png)
-
-Our distribution seems to have the general form of a bell shape, i.e. a Gaussian distribution. What seems odd though, are the two dents in the distribution at 6c and 7b.
-
-For this to understand we need to have some background knowledge on the different climbing grading systems used in different countries. The grading system used by 8a.nu, which is the source of our data set, is the _French_ grading system. In Germany a different grading system is used called _UIAA_.
-
-One peculiar thing about different grading systems is, that they do not follow the same step size. E.g. in French scale grading the step from one grade to the next higher grade could be smaller than the steps in between grades in UIAA. This can be seen when looking at a grade comparison chart as shown below.
-
-![Climbing Grades Comparison](images/climbing_grades_comparison.png)
-
-All the route in Germany are given grades following UIAA scale. If a climber wants to log a climb in Germany with a UIAA grade on 8a.nu, he has to convert the grade to French scale. As there are no real corresponding entries for 6c and 7b in the UIAA scale, this explains the dent in our distribution.
-
-Therefore, joining the numbers from 6c and 6b+, as well as 7a+ and 7b seems reasonable. 
-
-![ascents by grade (adjusted)](images/ascents_by_grade_adjusted.png)
-
-And the result of the distribution of logged climbs is now as expected.
-
-With the majority of climbs around 6c+, 7a level, what does this actually mean? Let's take a look at the assessment given by the website [thecrag.com](https://www.thecrag.com/en/article/grades#grade-ranges). And we can see that the majority of logged ascents are in the upper _Experienced_ range.
-
-![climbing levels](images/climbing_levels.png)
 
 #### Missing values
 
@@ -216,7 +193,7 @@ In the article it continues to claim that _Frankenjura boasts in excess of 10,00
 Lets dig deeper here. Maybe there are a number of duplicates in the registered routes. Let's see if an example can confirm this.
 
 ```
-X_train[X_train['route'].str.startswith('knack')].drop_duplicates(subset=['route'])['route']
+df[df['route'].str.startswith('knack')].drop_duplicates(subset=['route'])['route']
 ```
 Output:
 
@@ -349,7 +326,7 @@ In this section, the process for which metrics, algorithms, and techniques that 
 - _Was there any part of the coding process (e.g., writing complicated functions) that should be documented?_  
 
 `end Udacity`  
- As outlined earlier, we want to apply K-Means to find clusters of similar users. The first step in that process is _pairing_ the list of routes with the list of user ratings using `pd.pivot_table(X_train_ratings, index='user_id', columns= 'sector_route', values='rating')`.
+ As outlined earlier, we want to apply K-Means to find clusters of similar users. The first step in that process is _pairing_ the list of routes with the list of user ratings using `pd.pivot_table(df_ratings, index='user_id', columns= 'sector_route', values='rating')`.
  
  The results looks like this:
  
@@ -575,7 +552,7 @@ Thus we have solved the problem of personalised recommendations for climbers.
 ## V. Conclusion
 _(approx. 1-2 pages)_
 
-### Free-Form Visualization
+### OK - Free-Form Visualization
 `Udacity start`  
 In this section, you will need to provide some form of visualization that emphasizes an important quality about the project. It is much more free-form, but should reasonably support a significant result or characteristic about the problem that you want to discuss. Questions to ask yourself when writing this section:
 
@@ -583,6 +560,30 @@ In this section, you will need to provide some form of visualization that emphas
 - _Is the visualization thoroughly analyzed and discussed?_  
 - _If a plot is provided, are the axes, title, and datum clearly defined?_  
 `Udacity end`  
+
+Let's look at the distribution of routes by climbing grade (= difficulty level of the route) to understand whether our climbers are mostly beginners, advanced or professionals.
+
+![ascents by grade (dented)](images/ascents_by_grade_dented.png)
+
+Our distribution seems to have the general form of a bell shape, i.e. a Gaussian distribution. What seems odd though, are the two dents in the distribution at 6c and 7b.
+
+For this to understand we need to have some background knowledge on the different climbing grading systems used in different countries. The grading system used by 8a.nu, which is the source of our data set, is the _French_ grading system. In Germany a different grading system is used called _UIAA_.
+
+One peculiar thing about different grading systems is, that they do not follow the same step size. E.g. in French scale grading the step from one grade to the next higher grade could be smaller than the steps in between grades in UIAA. This can be seen when looking at a grade comparison chart as shown below.
+
+![Climbing Grades Comparison](images/climbing_grades_comparison.png)
+
+All the route in Germany are given grades following UIAA scale. If a climber wants to log a climb in Germany with a UIAA grade on 8a.nu, he has to convert the grade to French scale. As there are no real corresponding entries for 6c and 7b in the UIAA scale, this explains the dent in our distribution.
+
+Therefore, joining the numbers from 6c and 6b+, as well as 7a+ and 7b seems reasonable. 
+
+![ascents by grade (adjusted)](images/ascents_by_grade_adjusted.png)
+
+And the result of the distribution of logged climbs is now as expected.
+
+With the majority of climbs around 6c+, 7a level, what does this actually mean? Let's take a look at the assessment given by the website [thecrag.com](https://www.thecrag.com/en/article/grades#grade-ranges). And we can see that the majority of logged ascents are in the upper _Experienced_ range.
+
+![climbing levels](images/climbing_levels.png)
 
 ### OK - Reflection
 
