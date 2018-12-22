@@ -14,3 +14,13 @@ from IPython.display import Markdown as md
 from scipy.sparse import csr_matrix
 from sklearn.metrics import silhouette_samples, silhouette_score
 from Levenshtein import jaro_winkler	# to calculate similarity of route names
+from sklearn.metrics import mean_squared_error     # benchmark metric
+from math import sqrt
+from mpl_toolkits.axes_grid1 import make_axes_locatable		# visualization
+from sklearn.cluster import KMeans			# ML algorithm
+from surprise import SVD, SVDpp				# alternative ML algorithms
+from surprise import Dataset
+from surprise import Reader
+from surprise.model_selection import cross_validate
+from surprise.model_selection import GridSearchCV
+from collections import defaultdict
