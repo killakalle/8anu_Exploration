@@ -1,0 +1,16 @@
+# Required data set
+
+8a nu logbook from Kaggle
+https://www.kaggle.com/dcohen21/8anu-climbing-logbook
+
+
+# Required Python libraries
+import sqlite3				# for extraction of dataset
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import xlsxwriter
+from IPython.display import Markdown as md
+from scipy.sparse import csr_matrix
+from sklearn.metrics import silhouette_samples, silhouette_score
+from Levenshtein import jaro_winkler	# to calculate similarity of route names

@@ -5,8 +5,8 @@ November, 2018
 
 ## I. Definition
 
-### OK - Project Overview
-The goal of this project is to build a recommender system for climbing routes within a given climbing area. The system will take a climbers preference and his or her stats into consideration.
+### Project Overview
+The goal of this project is to build a recommender system for climbing routes within a given climbing area. The system will take a climber's preference into consideration.
 
 My Capstone Project is located in the world of **rock climbing**.  
 >_Rock climbing is an activity in which participants climb up, down or across natural rock formations or artificial rock walls. The goal is to reach the summit of a formation or the endpoint of a pre-defined route without falling._ [^first]  
@@ -40,7 +40,7 @@ As I am an avid climber myself, this project is something I take a strong person
 
 [^first]: [What is Rock Climbing?](https://riverrockclimbing.com/new-climbers/what-is-rock-climbing/)
 
-### OK - Problem Statement
+### Problem Statement
 
 The structure of the problem is that of a **Ranking problem** or more precise a **Collaborative Filtering problem**, where we try to suggest climbs based on a climber's similarity to other climbers.  
 
@@ -65,17 +65,17 @@ The following tasks should get us there:
 - Recommend top *n* routes that climber has not climbed before.  
 
 
-### OK - Metrics
+### Metrics
 
 Basically, our problem is a ranking problem. We want to show the most attractive and suitable climbs to a user. However, we'll frame it as a rating prediction problem.  
-Using different models we will predict ratings of so far unrated routes. For this purpose we will use **RMSE** as our evaluation metric.
+Using different models we will predict ratings of so far unrated routes. For this purpose we will use **RMSE** (Root Mean Squared Error) as our evaluation metric.
 
 The project model as well as all of the benchmark models can be evaluated using RMSE, thus making this metric the favorable choice.
 
 
 ## II. Analysis
 
-### OK - Data Exploration
+### Data Exploration
 
 The data set for this project was downloaded from Kaggle at  
 [8anu climbing logbook](https://www.kaggle.com/dcohen21/8anu-climbing-logbook)
@@ -186,7 +186,7 @@ Name: route, dtype: object
 We will have to consolidate those duplicates during Preprocessing.
 
 
-### OK - Exploratory Visualization
+### Exploratory Visualization
 
 #### Missing values
 
@@ -206,9 +206,9 @@ Since `sector_id` and `rating` are important for our analysis, we have to consid
 
 From the distribution of the target variable `rating`, we can see that there are four distinct values. With 52.7% of ratings equal to 0, only about half of the ascents have been rated.
 
-In the climbing community it is commonplace to rate only good climbs by marking them with a star. Thus, the values `1`, `2` or `3` correspond to one, two or three stars. Where one star is a good route and three stars is an exceptional good climb.
+In the climbing community it is commonplace to rate only good climbs by marking them with a star. Thus, the values `1`, `2` or `3` correspond to one, two or three stars. Where one star is a good route and three stars is an exceptionally good climb.
 
-Hence the value `0`, or zero stars, denotes that a climb was either not rated or was not worth a star according to that used.
+Hence the value `0`, or zero stars, denotes that a climb was either not rated or was not worth a star according to that user.
 
 Approximately 2/3 of the users have rated at least one item, i.e. gave a rating of 1, 2 or 3.
 
@@ -240,22 +240,22 @@ max      1665.000000
 Name: rating, dtype: float64
 ```
 
-### OK - Algorithms and Techniques
+### Algorithms and Techniques
 
 Our problem is a _Collaborative Filtering_ problem. As such, this problem lends itself to exploring data with **K-Means** algorithm and try to find natural clusters of climbers. Our main parameter for K-Means is the number of clusters.
 
 The _Silhouette Score_ is a suitable way to find out the number of clusters we should aim for using K-Means. Through K-Means we hope to achieve a clustering of climbers based on their similarity. Climbers within the same cluster should then have a high probability of giving high ratings to the same routes.
 
-### OK - Benchmark
+### Benchmark
 
-As a benchmark we'll use a __random recommender__, i.e. for a given user, any route will be given a random rating from 1, 2 or 3 stars. This will be our quantitative measurement to compare against. Results for this benchmark (RMSE) will be obtained during implementation as data pre-processing is required.  
+As a benchmark we'll use a __random recommender__, i.e. for a given user, any route will be given a random rating from 1, 2 or 3 stars. This will be our quantitative measurement to compare against. Results for this benchmark (RMSE) will be obtained during implementation as data pre-processing is required before.  
 For a __qualitative benchmark__, we'll compare results to the recommendations by climbing magazine _klettern.de_.
 
 ## III. Methodology
 
-### OK - Data Preprocessing
+### Data Preprocessing
 
-As a first preprocessing step we'll remove all entries where `sector_id == 0`. We have established earlier, that here the actual sector is not known, thus the entrie is not usable.
+As a first preprocessing step we'll remove all entries where `sector_id == 0`. We have established earlier, that here the actual sector is not known, thus the entry is not usable.
 
 Now we'll have to tackle route name consolidation. As identified earlier during _Data Exploration_ there are many duplicate routes. Since route names are per sector, we can reduce processing amount by consolidating route names within each sector.
 
@@ -266,18 +266,18 @@ The following steps will take us to a consolidated list of routes:
 - Pick the most used route name as the route name of choice
 - Do this for all sectors
 
-Eventually, we only have to get unique values for all sector-route names to arrive at a list of unique routes. After the consolidation our new count for routes is __6754__, which is a lot less than what our naive count was and seems a lot more reasonable.
+Eventually, we only have to get unique values for all `sector_route` names to arrive at a list of unique routes. After the consolidation our new count for routes is __6754__, which is a lot less than what our naive count was and seems a lot more reasonable.
 
 Luckily, getting a unique list of users is easy, by just applying `.drop_duplicates()` on `user_id`.
 
 Finally, we'll also get a list of unique ratings, by excluding `rating == 0` values as this is the same as _not rated_.
 
 
-### OK - Implementation
+### Implementation
 
  As outlined earlier, we want to apply K-Means to find clusters of similar users. The first step in that process is _pairing_ the list of routes with the list of user ratings using `pd.pivot_table(df_ratings, index='user_id', columns= 'sector_route', values='rating')`.
  
- The results looks like this:
+ The results look like this:
  
  ![Routes and ratings merged](images/routes_ratings_merged.png)
  
@@ -406,7 +406,7 @@ For example user `user_id = 5512` the top 10 recommended routes are
 
 In our qualitative check against the klettern.de top list, we can find again 50% of the routes recommended by our personal recommender. This, confirms that also our new recommender suggests routes which are among the best in the area.
 
-### OK - Refinement
+### Refinement
 
 In order to refine results of the SVD algorithm, we're executing a grid search on the parameters:
 
@@ -434,7 +434,7 @@ Test time         0.12    0.06    0.06    0.06    0.07    0.08    0.02
 
 ## IV. Results
 
-### OK - Model Evaluation and Validation
+### Model Evaluation and Validation
 
 In our final solution we were able to give an individual recommendation of the top n routes for any individual user. This solves the problem as stated earlier.  
 
@@ -463,9 +463,9 @@ The following figure shows the similarity of RMSE of SVD vs SVD++. The random mo
 
 ![Comparing RMSE](images/comparing_rmse.png)
 
-Thus we can see that there is no significant difference between implicit and explicit feedback.
+Thus, we can see that there is no significant difference between implicit and explicit feedback.
 
-### OK - Justification
+### Justification
 
 The comparison of our solution to the initial benchmark:
 
@@ -475,11 +475,13 @@ The comparison of our solution to the initial benchmark:
 
 We can see a significant improvement of _RMSE_ from Random model over the SVD to the tuned SVD model (smaller RMSE is better), although the tuning did not gain much.
 
-Thus we have solved the problem of personalised recommendations for climbers.  
+Thus, we have __solved the problem__ of __personalised recommendations__ for climbers.  
 
 ## V. Conclusion
 
-### OK - Free-Form Visualization
+### Free-Form Visualization
+
+One interesting observation about the input data is the following.
 
 Let's look at the distribution of routes by climbing grade (= difficulty level of the route) to understand whether our climbers are mostly beginners, advanced or professionals.
 
@@ -505,11 +507,11 @@ With the majority of climbs around 6c+, 7a level, what does this actually mean? 
 
 ![climbing levels](images/climbing_levels.png)
 
-### OK - Reflection
+### Reflection
 
 The entire process of finding a solution to the initially outlined problem started with extraction of data from the source data base. After an analysis of the data at hand to discover missing values, irregularities, etc. within the data, corresponding data preparation steps were decided.
 
-The data preparation comprised dealing with missing data and consolidation (cleaning) of route names as there were many duplicates in the data. Cleaning up the route names took considerably longer than I had anticipated. It reminded me of the statement that 80% of time usually is spent on data cleaning, when data 'from the wild' is to used.
+The data preparation comprised dealing with missing data and consolidation (cleaning) of route names as there were many duplicates in the data. Cleaning up the route names took considerably longer than I had anticipated. It reminded me of the statement that 80% of time usually is spent on data cleaning, when data 'from the wild' is being used insteat of clean datasets.
 
 Our initial idea of using K-Means to form clusters of similar users did not work out well. Using the Silhoutte Score we determined that the best number of clusters would be k=2. After running the clustering algorithm it became further clear that our data was not suitable for K-Means as more than 90% of users ended up in one of the two clusters. Hence, this was no basis for creating personalized recommendations.
 
@@ -517,7 +519,7 @@ To the rescue came SVD, an algorithm that has proven its usability already on th
 
 Using SVD we greatly improved over our benchmark, the random recommender model and thus solved our problem.  We compared also what would happen if we considered implicit feedback as well and found that there was no real change in our recommendation output.
 
-### OK - Improvement
+### Improvement
 
 A practical improvement to the current solution could be, that a user has the ability to restrict the recommended routes to different constraints, such as specific country, specific climbing area, specific crag. This should be rather easy to implement.
 
