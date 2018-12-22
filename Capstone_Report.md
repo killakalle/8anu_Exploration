@@ -547,7 +547,7 @@ The comparison of our solution to the initial benchmark:
 
 We can see a significant improvement of _RMSE_ from Random model over the SVD to the tuned SVD model (smaller RMSE is better), although the tuning did not gain much.
 
-Thus we have solved the problem of personalised recommendations for climbers.
+Thus we have solved the problem of personalised recommendations for climbers.  
 
 ## V. Conclusion
 _(approx. 1-2 pages)_
